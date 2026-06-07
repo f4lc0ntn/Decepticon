@@ -1,0 +1,48 @@
+# Local override (auto-merged by `docker compose`).
+#
+# Reconciles the stock OSS compose with the *current* GHCR images, which are
+# newer than the checked-in compose/docs. The sandbox transport changed to
+# HTTP-only (decepticon.backends.factory -> HTTPSandbox at http://sandbox:9999,
+# bearer-auth via the sandbox daemon). Stock compose never (a) joins langgraph
+# to sandbox-net, (b) sets SAAS_SANDBOX_URL, or (c) aligns the daemon/client
+# bearer token — so out of the box every agent tool call 401s or fails DNS.
+# The production launcher injects these; we replicate it here.
+#
+# Token: the daemon (sandbox) reads DECEPTICON_SANDBOX_TOKEN; the client
+# (langgraph) sends SAAS_SANDBOX_TOKEN as the bearer. They must share a value.
+# We set both to a known fixed string (isolated lab; value is not sensitive).
+services:
+  sandbox:
+    environment:
+      - DECEPTICON_SANDBOX_TOKEN=glm-ms3-sandbox-3f9a2c7e1b
+    # Persist sandbox daemon logs to host so decepticon-logger.py --sandbox
+    # and `docker logs decepticon-sandbox` both see command execution output.
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  langgraph:
+    networks:
+      - decepticon-net
+      - sandbox-net
+    environment:
+      - SAAS_SANDBOX_URL=http://sandbox:9999
+      - SAAS_SANDBOX_TOKEN=glm-ms3-sandbox-3f9a2c7e1b
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  litellm:
+    environment:
+      # Emit one JSON log line per LLM call (request + response + cost).
+      - LITELLM_LOG=DEBUG
+      - JSON_LOGS=true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"

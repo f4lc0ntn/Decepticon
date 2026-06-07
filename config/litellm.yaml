@@ -91,19 +91,6 @@ model_list:
       api_base: https://api.minimax.io/v1
       api_key: os.environ/MINIMAX_API_KEY
 
-  # ── Claude Code Auth (OAuth subscription) ────────────────────────────
-  - model_name: auth/claude-opus-4-7
-    litellm_params:
-      model: auth/claude-opus-4-7
-
-  - model_name: auth/claude-sonnet-4-6
-    litellm_params:
-      model: auth/claude-sonnet-4-6
-
-  - model_name: auth/claude-haiku-4-5
-    litellm_params:
-      model: auth/claude-haiku-4-5
-
   # ── DeepSeek ─────────────────────────────────────────────────────────
   - model_name: deepseek/deepseek-chat
     litellm_params:
@@ -137,75 +124,11 @@ model_list:
       model: mistral/codestral-latest
       api_key: os.environ/MISTRAL_API_KEY
 
-  # ── ChatGPT OAuth (subscription) ─────────────────────────────────────
-  - model_name: chatgpt/gpt-4o
-    litellm_params:
-      model: chatgpt/gpt-4o
-
-  - model_name: chatgpt/o1
-    litellm_params:
-      model: chatgpt/o1
-
-  - model_name: chatgpt/o3-mini
-    litellm_params:
-      model: chatgpt/o3-mini
-
-  # ── Gemini Advanced subscription ───────────────────────────────────
-  - model_name: gemini-sub/gemini-2.5-pro
-    litellm_params:
-      model: gemini-sub/gemini-2.5-pro
-
-  - model_name: gemini-sub/gemini-2.5-flash
-    litellm_params:
-      model: gemini-sub/gemini-2.5-flash
-
-  # ── Copilot Pro subscription ─────────────────────────────────────
-  - model_name: copilot/gpt-4o
-    litellm_params:
-      model: copilot/gpt-4o
-
-  - model_name: copilot/o1
-    litellm_params:
-      model: copilot/o1
-
-  # ── SuperGrok subscription ──────────────────────────────────────
-  - model_name: grok-sub/grok-3
-    litellm_params:
-      model: grok-sub/grok-3
-
-  - model_name: grok-sub/grok-3-mini
-    litellm_params:
-      model: grok-sub/grok-3-mini
-
-  # ── Perplexity Pro subscription ─────────────────────────────────
-  - model_name: pplx-sub/sonar-pro
-    litellm_params:
-      model: pplx-sub/sonar-pro
-
-  - model_name: pplx-sub/sonar
-    litellm_params:
-      model: pplx-sub/sonar
-
   # ── Local LLM (Ollama) ──────────────────────────────────────────────
   - model_name: ollama/llama3.2
     litellm_params:
       model: ollama/llama3.2
       api_base: os.environ/OLLAMA_API_BASE
-
-litellm_settings:
-  custom_provider_map:
-    - provider: "auth"
-      custom_handler: claude_code_handler.claude_code_handler_instance
-    - provider: "chatgpt"
-      custom_handler: chatgpt_handler.chatgpt_handler_instance
-    - provider: "gemini-sub"
-      custom_handler: gemini_handler.gemini_sub_handler_instance
-    - provider: "copilot"
-      custom_handler: copilot_handler.copilot_handler_instance
-    - provider: "grok-sub"
-      custom_handler: grok_handler.grok_sub_handler_instance
-    - provider: "pplx-sub"
-      custom_handler: perplexity_handler.perplexity_sub_handler_instance
 
 # --- Router Settings ---
 router_settings:
@@ -216,8 +139,16 @@ router_settings:
   allowed_fails: 3
   cooldown_time: 60
 
+# --- Logging ---
+# json_logs: emit one JSON object per line on stdout for each LLM call.
+# store_model_in_db: persist every request + response to postgres
+#   (litellm_spendlogs table) — query with decepticon-llm-report.py.
+litellm_settings:
+  json_logs: true
+  drop_params: true
+
 # --- General Settings ---
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   database_url: os.environ/DATABASE_URL
-  store_model_in_db: false
+  store_model_in_db: true
