@@ -15,20 +15,45 @@ services:
   sandbox:
     environment:
       - DECEPTICON_SANDBOX_TOKEN=glm-ms3-sandbox-3f9a2c7e1b
-    # Persist sandbox daemon logs to host so decepticon-logger.py --sandbox
-    # and `docker logs decepticon-sandbox` both see command execution output.
     logging:
       driver: json-file
       options:
         max-size: "50m"
         max-file: "5"
 
+  # ── Sandbox logging proxy ────────────────────────────────────────────────────
+  # Sits between langgraph and sandbox:9999. Logs every execute/execute_tmux
+  # request body (command) and response body (stdout/stderr/exit_code) to
+  # C:\decepticon\logs\sandbox-proxy.ndjson on the host.
+  # langgraph points at this proxy instead of sandbox directly.
+  sandbox-proxy:
+    build:
+      context: ./containers/sandbox-proxy
+    container_name: decepticon-sandbox-proxy
+    networks:
+      - sandbox-net
+    environment:
+      - UPSTREAM_URL=http://sandbox:9999
+      - LOG_PATH=/logs/sandbox-proxy.ndjson
+      - LISTEN_PORT=9998
+    volumes:
+      - C:/decepticon/logs:/logs
+    depends_on:
+      - sandbox
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   langgraph:
     networks:
       - decepticon-net
       - sandbox-net
     environment:
-      - SAAS_SANDBOX_URL=http://sandbox:9999
+      # Route through proxy so all execute() bodies are logged
+      - SAAS_SANDBOX_URL=http://sandbox-proxy:9998
       - SAAS_SANDBOX_TOKEN=glm-ms3-sandbox-3f9a2c7e1b
     logging:
       driver: json-file
@@ -38,7 +63,9 @@ services:
 
   litellm:
     environment:
-      # Emit one JSON log line per LLM call (request + response + cost).
+      # JSON_LOGS=true + LITELLM_LOG=DEBUG: one structured log line per LLM call.
+      # store_model_in_db=true in litellm.yaml persists full messages+response to
+      # the LiteLLM_SpendLogs postgres table (restart litellm to apply).
       - LITELLM_LOG=DEBUG
       - JSON_LOGS=true
     logging:

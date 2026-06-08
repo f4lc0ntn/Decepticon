@@ -515,7 +515,7 @@ def main():
         t = threading.Thread(target=capture_sandbox_logs,
                              args=(logdir, stop_evt), daemon=True)
         t.start()
-        logs.log(f"[{ts()}] Sandbox log capture started → {logdir}/sandbox-raw.log")
+        logs.log(f"[{ts()}] Sandbox log capture started -> {logdir}/sandbox-raw.log")
 
     try:
         logger.start()
